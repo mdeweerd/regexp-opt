@@ -86,13 +86,21 @@ sub trans_posix_recursive {
     while ($#tree >= 0) {
 	my $node = shift @tree;
 	$$s .= $delim if defined($delim);
+	$$s .= '(';
 	if (ref($node) eq 'ARRAY') {
-	    $$s .= '(';
-	    trans_posix_recursive($node, $s);
-	    $$s .= ')';
+	    if ($node->[0] eq '') {
+		trans_posix_recursive([@$node[1..$#$node]], $s);
+		$$s .= '?';
+	    } elsif ($#$node == 1 and ref($node->[1]) eq 'ARRAY') {
+		$$s .= "($node->[0])";
+		trans_posix_recursive([@$node[1..$#$node]], $s);
+	    } else {
+		trans_posix_recursive($node, $s);
+	    }
 	} else {
-	    ${$s} .= "($node)";
+	    ${$s} .= "$node";
 	}
+	$$s .= ')';
 	$delim = '|';
     }
     return $$s;
