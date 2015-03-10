@@ -51,15 +51,27 @@ sub regexp_opt {
     return [] if $#t == -1;
     push @output;
     while (1) {
-#	print "NEXT ".Dumper(\@t);
 	my @res = split_prefix \@t;
-#	print "RES @res\n";
 	if ($res[1] <= 0) {
-	    # my $rev = [ map { [ reverse @{$_} ] } @t ];
-	    # @res = split_prefix [ map { [ reverse @{$_} ] } @t ];
-	    # if ($res[1] > 0) {
-	    # }
-	    push @output, map { join('', @{$_}) } @t[0..$res[0]];
+	    my @rv = map { [ reverse @{$_} ] } @t;
+	    @res = split_prefix \@rv;
+	    if ($res[1] > 0) {
+		my @x = reverse @{$rv[0]}[0..$res[1]];
+		my $sfxlen = $#x;
+		my $sfx = join('', @x);
+		my $type = T_SFX;
+		my $prefixes = regexp_opt(map { my @r = @{$_};
+						if ($sfxlen == $#r) {
+						    $type |= T_OPT;
+						    ();
+						} else {
+						    [ @r[0..$#r-$sfxlen-1] ];
+						}
+					  } @t[0..$res[0]]);
+		push @output, [ $type, $sfx, $prefixes ];
+	    } else {
+		push @output, map { join('', @{$_}) } @t[0..$res[0]];
+	    }
 	} elsif ($res[0] == 0) {
 	    push @output, join('', @{$t[0]});
 	} else {
@@ -67,17 +79,15 @@ sub regexp_opt {
 	    my $pfxlen = $#x;
 	    my $pfx = join('', @x);
 	    my $type = T_PFX;
-	    if ($pfxlen == $#{$t[0]}) {
-		$type |= T_OPT;
-		shift @t;
-		--$res[0];
-	    }
-	    push @output, [ $type,
-			    $pfx, 
-			    regexp_opt(map { my @r = @{$_};
-					     my @a = @r[$pfxlen+1..$#r];
-					     \@a
-				       } @t[0..$res[0]]) ];
+	    my $suffixes = regexp_opt(map { my @r = @{$_};
+					    if ($pfxlen == $#r) {
+						$type |= T_OPT;
+						();
+					    } else {
+						[ @r[$pfxlen+1..$#r] ];
+					    }
+				      } @t[0..$res[0]]);
+	    push @output, [ $type, $pfx, $suffixes ];
 	}
 	last if $res[0] == $#t;
 	@t = @t[($res[0]+1)..$#t];
@@ -117,6 +127,12 @@ sub trans_posix_recursive {
 	posix_build_opt($s, @{$tree[0]});
 	$$s .= '?' if ($mode & T_OPT);
 	$$s .= ')';	
+    } elsif ($type == T_SFX) {
+	my $sfx = shift(@tree);
+	$$s .= '(';
+	posix_build_opt($s, @{$tree[0]});
+	$$s .= '?' if ($mode & T_OPT);
+	$$s .= "$sfx)";	
     } else {
 	croak "unrecognized element type";
     }
