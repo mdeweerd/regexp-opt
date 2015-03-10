@@ -1,4 +1,5 @@
 use strict;
+use Carp;
 use Data::Dumper;
 
 # split_prefix(ARRAY)
@@ -54,31 +55,12 @@ print join("\n", sort @input)."\n\n";
 # print "@x\n";
 # exit;
 
-sub dprint {
-    my $res = shift;
-    my $p = shift;
-    print "$p " if defined $p;
-    foreach my $x (@{$res}) {
-	print "$x->[0]";
-	if (defined($x->[1])) {
-	    print " ";
-	    print Dumper($x);
-	}
-	print "\n";
-    }
-}
-
-#my $level;
 sub regexp_opt {
     my @t = @_;
     my @output;
-#    ++$level;
-#    print "$level IN ".Dumper(\@t)."\n";
     return [] if $#t == -1;
     while (1) {
-#	print "$level NEXT $#t ".Dumper(\@t)."\n";
 	my @res = split_prefix \@t;
-#	print "$level R @res, $#t\n";
 	if ($res[0] == 0) {
 	    push @output, join('', @{$t[0]}) ;
 	} elsif ($res[1] <= 0) {
@@ -88,23 +70,65 @@ sub regexp_opt {
 	    push @output, [ join('', @x), 
 			    regexp_opt(map { my @r = @{$_};
 					     my @a = @r[$#x+1..$#r];
-#					     print "A @r -- @a\n";
 					     \@a
 				       } @t[0..$res[0]]) ];
-#	    print "==\n";
 	}
-#	print "$level T=$#t\n";
 	last if $res[0] == $#t;
 	@t = @t[($res[0]+1)..$#t];
     }
-#    print "$level OUT ".Dumper(\@output)."\n";
-#    --$level;
     return \@output;
 }
 
-my @t = map { my @x = split //, $_; \@x } sort @input;
-my $res = regexp_opt(@t);
-#dprint($res,"RESULT");
+sub trans_posix_recursive {
+    my ($treeref, $s) = @_;
+    my @tree = @{$treeref};
+    my $delim;
+    while ($#tree >= 0) {
+	my $node = shift @tree;
+	$$s .= $delim if defined($delim);
+	if (ref($node) eq 'ARRAY') {
+	    $$s .= '(';
+	    trans_posix_recursive($node, $s);
+	    $$s .= ')';
+	} else {
+	    ${$s} .= "($node)";
+	}
+	$delim = '|';
+    }
+    return $$s;
+}
+
+sub trans_posix {
+    my ($tree, $opts) = @_;
+    return trans_posix_recursive($tree);
+}
+
+my %transtab = (
+    posix => \&trans_posix
+);
+
+sub array_to_regexp {
+    my $trans = \&trans_posix;
+    my $opts;
+
+    if (ref($_[0]) eq 'HASH') {
+	$opts = shift;
+    }
+
+    if (defined($opts->{type})) {
+	$trans = $transtab{$opts->{type}};
+	croak "unsupported type: $opts->{type}"
+	    unless defined $trans;
+    }
+    
+    my @t = map { my @x = split //, $_; \@x } sort @_;
+    my $res = regexp_opt(@t);
+    print Dumper($res) if ($opts->{debug});
+    return &{$trans}($res, $opts);
+}
+
+my $s = array_to_regexp({ debug => 1 }, @input);
+print "$s\n";
 
 
 
