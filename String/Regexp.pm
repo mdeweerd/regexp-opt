@@ -95,20 +95,97 @@ sub regexp_opt {
     return \@output;
 }
 
+sub escape_re_chars {
+    my $s = shift;
+    $s =~ s/([][\\<>.(){}?*^\$])/\\$1/g;
+    return $s;
+}
+
 sub posix_build_opt {
     my $s = shift;
     my $delim;
+    my @cclass;
     
     $$s .= '(' if ($#_ > 0);
     foreach my $elt (@_) {
 	$$s .= $delim if defined $delim;
 	if (ref($elt) eq 'ARRAY') {
 	    trans_posix_recursive($elt, $s);
+	    $delim = '|';
+	} elsif (length($elt) == 1) {
+	    push @cclass, $elt;
 	} else {
-	    $$s .= "($elt)";
+	    $$s .= '(' . escape_re_chars($elt) . ')';
+	    $delim = '|';
 	}
-	$delim = '|';
     }
+
+    if ($#cclass > 0) {
+	$$s .= $delim if defined $delim;
+	$$s .= '[';
+	@cclass = sort {
+	    if ($a eq '[') {
+		if ($b eq ']') {
+		    return 1;
+		} else {
+		    return -1;
+		}
+	    } elsif ($b eq '[') {
+		if ($b eq ']') {
+		    return -1;
+		} else {
+		    return 1;
+		}
+	    } elsif ($a eq ']') {
+		return -1;
+	    } elsif ($b eq ']') {
+		return 1;
+	    } elsif ($a eq '-') {
+		return 1;
+	    } elsif ($b eq '-') {
+		return -1;
+	    } else {
+		$a <=> $b;
+	    }
+	} @cclass;
+
+	my $start = shift @cclass;
+	my $end;
+	while (my $c = shift @cclass) {
+	    if (defined($end)) {
+		if (ord($c) - ord($end) == 1) {
+		    $end = $c;
+		} else {
+		    if (ord($end) - ord($start) > 1) {
+			$$s .= "$start-$end";
+		    } else {
+			$$s .= "$start$end";
+		    }
+		    $start = $c;
+		    $end = undef;
+		}
+	    } elsif (ord($c) - ord($start) == 1) {
+ 		$end = $c;
+	    } else {
+		$$s .= "$start$end";
+		$start = $c;
+		$end = undef;
+	    }
+	}
+
+	if (defined($start)) {
+	    $$s .= $start;
+	    if (defined($end)) {
+		if (ord($end) - ord($start) > 1) {
+		    $$s .= "-$end";
+		} else {
+		    $$s .= $end;
+		}
+	    }
+	}
+	$$s .= ']';
+    }
+    
     $$s .= ')' if ($#_ > 0);
 }
 
@@ -123,7 +200,7 @@ sub trans_posix_recursive {
 	posix_build_opt($s, @tree);
 	$$s .= '?' if ($mode & T_OPT); # FIXME
     } elsif ($type == T_PFX) {
-	$$s .= '('.shift(@tree);
+	$$s .= '(' . escape_re_chars(shift(@tree));
 	posix_build_opt($s, @{$tree[0]});
 	$$s .= '?' if ($mode & T_OPT);
 	$$s .= ')';	
@@ -132,7 +209,7 @@ sub trans_posix_recursive {
 	$$s .= '(';
 	posix_build_opt($s, @{$tree[0]});
 	$$s .= '?' if ($mode & T_OPT);
-	$$s .= "$sfx)";	
+	$$s .= escape_re_chars($sfx). ')';	
     } else {
 	croak "unrecognized element type";
     }
