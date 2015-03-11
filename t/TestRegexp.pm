@@ -1,0 +1,58 @@
+# -*- perl -*-
+# Copyright (C) 2015 Sergey Poznyakoff <gray@gnu.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+package TestRegexp;
+
+use strict;
+use String::Regexp;
+use Test;
+use Carp;
+
+require Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(TestRegexp);
+
+sub TestRegexp {
+    local %_ = @_;
+    croak "no input supplied" unless defined $_{input};
+    my @input = @{$_{input}};
+
+    my $tests = $#input + 1;
+
+    $tests++ if defined $_{re};
+    $tests += $#{$_{match}} + 1 if defined($_{match});
+    $tests += $#{$_{nomatch}} + 1 if defined($_{nomatch});
+
+    plan(tests => $tests);
+    
+    my $re = array_to_regexp(\%_, @input);
+
+    ok($re, $_{re}) if defined($_{re});
+    
+    foreach my $s (@input) {
+	ok($s, qr/$re/);
+    }
+
+    foreach my $s (@{$_{match}}) {
+	ok($s, qr/$re/);
+    }
+
+    foreach my $s (@{$_{nomatch}}) {
+	ok($s !~ m/$re/);
+    }
+}
+
+1;
