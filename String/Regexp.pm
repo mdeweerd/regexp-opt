@@ -120,7 +120,10 @@ sub posix_build_opt {
 	}
     }
 
-    if ($#cclass > 0) {
+    if ($#cclass == 0) {
+	$$s .= $delim if defined $delim;
+	$$s .= $cclass[0];
+    } elsif ($#cclass >= 0) {
 	$$s .= $delim if defined $delim;
 	$$s .= '[';
 	@cclass = sort {
