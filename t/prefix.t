@@ -4,6 +4,6 @@ use strict;
 use TestRegexp;
 
 TestRegexp(input => [ 'afoo', 'afquz', 'afbar' ],
-           nomatch => [ 'afbarba' ],
+           xfail => [ 'afbarba' ],
            type  => 'pcre',
-	   word  => 1);
+	   match => 'word');

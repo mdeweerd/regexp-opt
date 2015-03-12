@@ -5,7 +5,7 @@ use TestRegexp;
 
 TestRegexp(input => [ 's' ],
            match => [ 's1', 'asa' ], 
-           nomatch => [ 'a' ],
+           xfail => [ 'a' ],
            type  => 'pcre',
-	   word  => 0);
+	   match => 'word');
 	   

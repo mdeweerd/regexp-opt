@@ -33,8 +33,8 @@ sub TestRegexp {
     my $tests = $#input + 1;
 
     $tests++ if defined $_{re};
-    $tests += $#{$_{match}} + 1 if defined($_{match});
-    $tests += $#{$_{nomatch}} + 1 if defined($_{nomatch});
+    $tests += $#{$_{xok}} + 1 if defined($_{xok});
+    $tests += $#{$_{xfail}} + 1 if defined($_{xfail});
 
     plan(tests => $tests);
     
@@ -46,11 +46,11 @@ sub TestRegexp {
 	ok($s, qr/$re/);
     }
 
-    foreach my $s (@{$_{match}}) {
+    foreach my $s (@{$_{xok}}) {
 	ok($s, qr/$re/);
     }
 
-    foreach my $s (@{$_{nomatch}}) {
+    foreach my $s (@{$_{xfail}}) {
 	ok($s !~ m/$re/);
     }
 }

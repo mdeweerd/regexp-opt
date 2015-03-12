@@ -4,8 +4,8 @@ use strict;
 use TestRegexp;
 
 TestRegexp(input => [ 'afoo', 'foo', 'efoo' ],
-           nomatch => [ 'bfoo' ],
+           xfail => [ 'bfoo' ],
 	   re => '\b(?:(?:[ae])?foo)\b',
            type  => 'pcre',
-	   word  => 1);
+	   match => 'word');
 

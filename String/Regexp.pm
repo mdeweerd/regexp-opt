@@ -331,7 +331,11 @@ sub trans_posix {
     );
     my $s = '';
     trans_posix_recursive(\%conf, \$s, $tree);
-    $s = "\\<$s\\>" if $opts->{word};
+    if ($opts->{match} eq 'word') {
+	$s = "\\<$s\\>";
+    } elsif ($opts->{match} eq 'exact') {
+	$s = "^$s\$";
+    }
     return $s;
 }
 
@@ -352,7 +356,11 @@ sub trans_pcre {
     );
     my $s = '';
     trans_posix_recursive(\%conf, \$s, $tree);
-    $s = "\\b$s\\b" if $opts->{word};
+    if ($opts->{match} eq 'word') {
+	$s = "\\b$s\\b";
+    } elsif ($opts->{match} eq 'exact') {
+	$s = "^$s\$";
+    }
     return $s;
 }
 
@@ -388,13 +396,15 @@ Valid keys are:
 Controls the flavor of the generated expression: POSIX or Perl-compatible one.
 Default is B<pcre>.    
 
-=item B<word> => B<0>|B<1>
+=item B<match> => B<default>|B<exact>|B<word>
+    
+If B<default>, the expression will match any word from B<@strings> appearing
+as a part of another word.
 
-If B<1>, make sure the expression matches single words.  If B<0>, the
-expression will also match any word from B<@strings> appearing as a part
-of another word.    
-
-Default is B<0>.    
+If B<exact>, the expression will match a word from B<@strings> appearing
+on a line alone.    
+    
+If B<word>, the expression will match single words only.    
     
 =item B<debug> => B<0>|B<1>
 

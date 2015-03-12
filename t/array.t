@@ -16,7 +16,7 @@ my @input = (
 
 TestRegexp(input => \@input,
            type  => 'pcre',
-	   word  => 1);
+	   match => 'word');
 
 
     
