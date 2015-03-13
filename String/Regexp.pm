@@ -155,6 +155,9 @@ sub regexp_opt {
 #   posix [ '(', ')' ]
 #   pcre  [ '(?:', ')' ]
 #
+# branch:  A delimiter used to separate branches ('|' for both posix and
+# pcre)   
+#
 # The second argument is a reference to a string where the generated
 # expression will be stored.
 # 
@@ -175,13 +178,13 @@ sub escape_re_chars {
 }
 
 # Synopsis:
-#   posix_build_opt(CONF, STRING, LIST...)
+#   nodelist_to_regexp(CONF, STRING, LIST...)
 # Arguments:
 #   CONF and STRING as described above.
 #   LIST is a subtree.
 # Description:
 #   Convert subtree into regular expression.
-sub posix_build_opt {
+sub nodelist_to_regexp {
     my $conf = shift;
     my $s = shift;
     my $delim;
@@ -191,13 +194,13 @@ sub posix_build_opt {
     foreach my $elt (@_) {
 	$$s .= $delim if defined $delim;
 	if (ref($elt) eq 'ARRAY') {
-	    trans_posix_recursive($conf, $s, $elt);
-	    $delim = '|';
+	    generic_regexp($conf, $s, $elt);
+	    $delim = $conf->{branch};
 	} elsif (length($elt) == 1) {
 	    push @cclass, $elt;
 	} else {
 	    $$s .= $conf->{group}[0] . escape_re_chars($conf, $elt) . $conf->{group}[1];
-	    $delim = '|';
+	    $delim = $conf->{branch};
 	}
     }
 
@@ -275,7 +278,7 @@ sub posix_build_opt {
 }
 
 # Synopsis:
-#   trans_posix_recursive(CONF, STRING, TREE...)
+#   generic_regexp(CONF, STRING, TREE...)
 # Arguments:
 #   CONF and STRING as described above.
 #   TREE is a list of tree nodes.
@@ -283,7 +286,7 @@ sub posix_build_opt {
 #   Recursively convert tree into a regular expression.
 # Return value:
 #   Regular expression string.
-sub trans_posix_recursive {
+sub generic_regexp {
     my ($conf, $s, $treeref) = @_;
     my @tree = @{$treeref};
     my $delim;
@@ -291,17 +294,17 @@ sub trans_posix_recursive {
     my $mode = shift @tree;
     my $type = $mode & T_MASK;
     if ($type == T_ALT) {
-	posix_build_opt($conf, $s, @tree);
+	nodelist_to_regexp($conf, $s, @tree);
 	$$s .= '?' if ($mode & T_OPT); # FIXME
     } elsif ($type == T_PFX) {
 	$$s .= $conf->{group}[0] . escape_re_chars($conf, shift(@tree));
-	posix_build_opt($conf, $s, @{$tree[0]});
+	nodelist_to_regexp($conf, $s, @{$tree[0]});
 	$$s .= '?' if ($mode & T_OPT);
 	$$s .= $conf->{group}[1];	
     } elsif ($type == T_SFX) {
 	my $sfx = shift(@tree);
 	$$s .= $conf->{group}[0];
-	posix_build_opt($conf, $s, @{$tree[0]});
+	nodelist_to_regexp($conf, $s, @{$tree[0]});
 	$$s .= '?' if ($mode & T_OPT);
 	$$s .= escape_re_chars($conf, $sfx). $conf->{group}[1];	
     } else {
@@ -315,26 +318,57 @@ sub trans_posix_recursive {
 # ########################################################
 
 # Synopsis:
+#   my $s = trans_basic(TREE, OPTS)
+# Arguments:
+#   TREE - a reference to a parse tree obtained from
+#          regexp_opt;
+#   OPTS - hash reference
+# Description:
+#   Convert tree into POSIX basic regular expression.
+
+sub trans_basic {
+    my ($tree, $opts) = @_;
+    my %conf = (
+	rxchars => '[][\\<>.?*^\$]',
+	group   => [ '\(', '\)' ],
+	branch  => '\|'
+    );
+    my $s = '';
+    generic_regexp(\%conf, \$s, $tree);
+    if ($opts->{match} eq 'word') {
+	$s = "\\<$s\\>";
+    } elsif ($opts->{match} eq 'exact') {
+	$s = "^$s\$";
+    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
+	croak "invalid match value: $opts->{match}";
+    }
+    return $s;
+}
+
+# Synopsis:
 #   my $s = trans_posix(TREE, OPTS)
 # Arguments:
 #   TREE - a reference to a parse tree obtained from
 #          regexp_opt;
 #   OPTS - hash reference
 # Description:
-#   Convert tree into POSIX regular expression.
+#   Convert tree into POSIX extended regular expression.
 
 sub trans_posix {
     my ($tree, $opts) = @_;
     my %conf = (
-	rxchars => '[][\\<>.(){}?*^\$]',
-	group   => [ '(', ')' ]
+	rxchars => '[][\\<>.|(){}?*^\$]',
+	group   => [ '(', ')' ],
+	branch  => '|'
     );
     my $s = '';
-    trans_posix_recursive(\%conf, \$s, $tree);
+    generic_regexp(\%conf, \$s, $tree);
     if ($opts->{match} eq 'word') {
 	$s = "\\<$s\\>";
     } elsif ($opts->{match} eq 'exact') {
 	$s = "^$s\$";
+    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
+	croak "invalid match value: $opts->{match}";
     }
     return $s;
 }
@@ -351,22 +385,26 @@ sub trans_posix {
 sub trans_pcre {
     my ($tree, $opts) = @_;
     my %conf = (
-	rxchars => '[][\\.(){}?*^\$]',
-	group   => [ '(?:', ')' ]
+	rxchars => '[][\\|.(){}?*^\$]',
+	group   => [ '(?:', ')' ],
+	branch  => '|'
     );
     my $s = '';
-    trans_posix_recursive(\%conf, \$s, $tree);
+    generic_regexp(\%conf, \$s, $tree);
     if ($opts->{match} eq 'word') {
 	$s = "\\b$s\\b";
     } elsif ($opts->{match} eq 'exact') {
 	$s = "^$s\$";
+    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
+	croak "invalid match value: $opts->{match}";
     }
     return $s;
 }
 
 my %transtab = (
-    posix => \&trans_posix,
-    pcre => \&trans_pcre
+    pcre => \&trans_pcre,
+    basic => \&trans_basic,
+    posix => \&trans_posix
 );
 
 =pod
@@ -391,10 +429,10 @@ Valid keys are:
 
 =over 4
 
-=item B<type> => B<posix>|B<pcre>
+=item B<type> => B<pcre>|B<basic>|B<posix>
 
-Controls the flavor of the generated expression: POSIX or Perl-compatible one.
-Default is B<pcre>.    
+Controls the flavor of the generated expression: Perl-compatible (the
+default), POSIX basic or POSIX extended.
 
 =item B<match> => B<default>|B<exact>|B<word>
     
@@ -411,15 +449,17 @@ If B<word>, the expression will match single words only.
 If B<1>, enable debugging output.    
     
 =back    
+
+=head1 AUTHORS
+
+Sergey Poznyakoff <gray@gnu.org>    
     
 =cut     
 sub array_to_regexp {
     my $trans = \&trans_pcre;
     my $opts;
 
-    if (ref($_[0]) eq 'HASH') {
-	$opts = shift;
-    }
+    $opts = shift if (ref($_[0]) eq 'HASH');
 
     if (defined($opts->{type})) {
 	$trans = $transtab{$opts->{type}};
@@ -428,10 +468,10 @@ sub array_to_regexp {
     }
     
     my @t = map { my @x = split //, $_; \@x } sort @_;
-    my $res = regexp_opt(@t);
-    unshift @{$res}, T_ALT;
-    print Dumper($res) if ($opts->{debug});
-    return &{$trans}($res, $opts);
+    my $tree = regexp_opt(@t);
+    unshift @{$tree}, T_ALT;
+    print Data::Dumper->Dump([$tree], [qw(tree)]) if ($opts->{debug});
+    return &{$trans}($tree, $opts);
 }
 
 1;
