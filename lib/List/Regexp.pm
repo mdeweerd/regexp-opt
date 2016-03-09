@@ -331,92 +331,25 @@ sub generic_regexp {
 # Generate POSIX and Perl-compatible regular expressions.
 # ########################################################
 
-# Synopsis:
-#   my $s = trans_posix(TREE, OPTS)
-# Arguments:
-#   TREE - a reference to a parse tree obtained from
-#          parse;
-#   OPTS - hash reference
-# Description:
-#   Convert tree into POSIX extended regular expression.
-
-sub trans_posix {
-    my ($tree, $opts) = @_;
-    my %conf = (
-	rxchars => '[][\\<>.|(){}?*^\$]',
-	group   => [ '(', ')' ],
-	branch  => '|'
-    );
-    my $s = generic_regexp(\%conf, $tree);
-    if ($opts->{match} eq 'word') {
-	$s = "\\<$s\\>";
-    } elsif ($opts->{match} eq 'exact') {
-	$s = "^$s\$";
-    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
-	croak "invalid match value: $opts->{match}";
-    }
-    if ($opts->{group}) {
-	$s = $conf->{group}[0] . $s . $conf->{group}[1];
-    }
-    return $s;
-}
-
-# Synopsis:
-#   my $s = trans_pcre(TREE, OPTS)
-# Arguments:
-#   TREE - a reference to a parse tree obtained from
-#          parse;
-#   OPTS - hash reference
-# Description:
-#   Convert tree into Perl-compatible regular expression.
-
-sub trans_pcre {
-    my ($tree, $opts) = @_;
-    my %conf = (
+my %transtab = (
+    pcre => {
 	rxchars => '[][\\|.(){}?*^\$]',
 	group   => [ '(?:', ')' ],
-	branch  => '|'
-    );
-    my $s = generic_regexp(\%conf, $tree);
-    if ($opts->{match} eq 'word') {
-	$s = "\\b$s\\b";
-    } elsif ($opts->{match} eq 'exact') {
-	$s = "^$s\$";
-    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
-	croak "invalid match value: $opts->{match}";
-    }
-    if ($opts->{group}) {
-	$s = $conf->{group}[0] . $s . $conf->{group}[1];
-    }
-    return $s;
-}
-
-sub trans_emacs {
-    my ($tree, $opts) = @_;
-    my %conf = (
+	branch  => '|',
+	word => [ '\\b', '\\b' ]
+    },
+    posix => {
+	rxchars => '[][\\<>.|(){}?*^\$]',
+	group   => [ '(', ')' ],
+	branch  => '|',
+	word => [ '\\<', '\\>' ]
+    },
+    emacs => {
 	rxchars => '[][.?*^\$]',
 	group   => [ '\\\\(?:', '\\\\)' ],
-	branch  => '\\\\|'
-    );
-
-    my $s = generic_regexp(\%conf, $tree);
-    if ($opts->{match} eq 'word') {
-	$s = '\\\\<'.$s.'\\\\>';
-    } elsif ($opts->{match} eq 'exact') {
-	$s = "^$s\$";
-    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
-	croak "invalid match value: $opts->{match}";
+	branch  => '\\\\|',
+	word => [ '\\\\<', '\\\\>' ]
     }
-    if ($opts->{group}) {
-	$s = $conf->{group}[0] . $s . $conf->{group}[1];
-    }
-    return $s;
-}
-
-my %transtab = (
-    pcre => \&trans_pcre,
-    posix => \&trans_posix,
-    emacs => \&trans_emacs
 );
 
 =pod
@@ -470,7 +403,8 @@ Sergey Poznyakoff <gray@gnu.org>
 sub regexp_opt {
     my $trans = \&trans_pcre;
     my $opts;
-
+    my $conf;
+    
     $opts = shift if (ref($_[0]) eq 'HASH');
 
     if (defined($opts->{type})) {
@@ -483,7 +417,18 @@ sub regexp_opt {
     my $tree = parse(@t);
     unshift @{$tree}, T_ALT;
     print Data::Dumper->Dump([$tree], [qw(tree)]) if ($opts->{debug});
-    return &{$trans}($tree, $opts);
+
+    my $s = generic_regexp($trans, $tree);
+    if ($opts->{match} eq 'word') {
+	$s =  $trans->{word}[0] . $s . $trans->{word}[1];
+    } elsif ($opts->{match} eq 'exact') {
+	$s = "^$s\$";
+    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
+	croak "invalid match value: $opts->{match}";
+    }
+    $s = $trans->{group}[0] . $s . $trans->{group}[1]
+	if $opts->{group};
+    return $s;
 }
 
 1;

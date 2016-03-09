@@ -43,6 +43,7 @@ GetOptions("h" => sub {
 	   "emacs" => sub { $opts{type} = $_[0] },
 	   "exact" => sub { $opts{match} = $_[0] },
 	   "word" => sub { $opts{match} = $_[0] },
+	   "group" => \$opts{group},
 	   "debug" => \$opts{debug}) or exit(EX_USAGE);
 
 pod2usage(-exitstatus => EX_USAGE, -verbose => 0, -output  => \*STDERR)
