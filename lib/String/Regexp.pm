@@ -34,7 +34,7 @@ our $VERSION = "1.00";
 #   ARRAY is a sorted array of char array references.
 # Description:
 #   Find N first elements of ARRAY sharing the longest prefix (of length L).
-#   In other words, find N and L such that ARRAY[N][L+1] != ARRAY[N][L+1].
+#   In other words, find N and L such that ARRAY[N][L+1] != ARRAY[N+1][L+1].
 # Return value:
 #   (N, L)
 sub split_prefix {

@@ -18,9 +18,9 @@ use strict;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(NAME         =>  'String::Regexp',
-              VERSION_FROM =>  'String/Regexp.pm',
+              VERSION_FROM =>  'lib/String/Regexp.pm',
               AUTHOR       =>  'Sergey Poznyakoff <gray@gnu.org>',
               LICENSE      =>  'gpl_v3',
 	      ABSTRACT     =>  'Construct a regexp to match a string from the string list',
-	      PM           => { 'String/Regexp.pm' => '$(INST_LIBDIR)/Regexp.pm' }
+#	      PM           => { 'String/Regexp.pm' => '$(INST_LIBDIR)/Regexp.pm' }
 );
