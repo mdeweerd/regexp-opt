@@ -178,7 +178,7 @@ sub escape_re_chars {
 }
 
 # Synopsis:
-#   nodelist_to_regexp(CONF, STRING, LIST...)
+#   nodelist_to_regexp(CONF, LIST...)
 # Arguments:
 #   CONF and STRING as described above.
 #   LIST is a subtree.
@@ -186,31 +186,26 @@ sub escape_re_chars {
 #   Convert subtree into regular expression.
 sub nodelist_to_regexp {
     my $conf = shift;
-    my $strref = shift;
-    my $delim;
+    my $opt = shift;
+    my @alternations;
     my @cclass;
     my $s;
-
+    my $set;
+    
     foreach my $elt (@_) {
 	if (ref($elt) eq 'ARRAY') {
-	    $s .= $delim if defined $delim;
-	    generic_regexp($conf, \$s, $elt);
-	    $delim = $conf->{branch};
+	    push @alternations, generic_regexp($conf, $elt);
 	} elsif (length($elt) == 1) {
 	    push @cclass, $elt;
 	} else {
-	    $s .= $delim if defined $delim;
-	    $s .= escape_re_chars($conf, $elt);
-	    $delim = $conf->{branch};
+	    push @alternations, escape_re_chars($conf, $elt);
 	}
     }
 
     if ($#cclass == 0) {
-	$s .= $delim if defined $delim;
-	$s .= $cclass[0];
+	push @alternations, $cclass[0];
     } elsif ($#cclass >= 0) {
-	$s .= $delim if defined $delim;
-	$s .= '[';
+	$s = '[';
 	@cclass = sort {
 	    if ($a eq '[') {
 		if ($b eq ']') {
@@ -273,15 +268,35 @@ sub nodelist_to_regexp {
 	    }
 	}
 	$s .= ']';
+	push @alternations, $s;
+	$set = 1;
     }
 
-    $s = $conf->{group}[0] . $s . $conf->{group}[1]
-	if $delim;
-    $$strref .= $s;
+    if ($#alternations > 0) {
+	$s = $conf->{group}[0]
+	     . join($conf->{branch},@alternations)
+	     . $conf->{group}[1];
+    } else {
+	$s = $alternations[0];
+    }
+    if ($opt) {
+	# Extra parentheses must be used if:
+	#  1. There were no alternations ($#alternations <= 0)
+	#  2. The resulting text is not a character set (!$set)
+	#  3. It is longer than one character
+	if ($#alternations <= 0
+	    and !$set
+	    and length($s) > 1) {
+	    $s = $conf->{group}[0] . $s . $conf->{group}[1];
+	} 
+	$s .= '?';
+    }
+
+    return $s;
 }
 
 # Synopsis:
-#   generic_regexp(CONF, STRING, TREE...)
+#   generic_regexp(CONF, TREE...)
 # Arguments:
 #   CONF and STRING as described above.
 #   TREE is a list of tree nodes.
@@ -290,29 +305,26 @@ sub nodelist_to_regexp {
 # Return value:
 #   Regular expression string.
 sub generic_regexp {
-    my ($conf, $s, $treeref) = @_;
+    my ($conf, $treeref) = @_;
     my @tree = @{$treeref};
     my $delim;
-
+    my $str;
+    
     my $mode = shift @tree;
     my $type = $mode & T_MASK;
     if ($type == T_ALT) {
-	nodelist_to_regexp($conf, $s, @tree);
-	$$s .= '?' if ($mode & T_OPT); # FIXME
+	$str = nodelist_to_regexp($conf, $mode & T_OPT, @tree);
     } elsif ($type == T_PFX) {
-	$$s .= escape_re_chars($conf, shift(@tree));
-	nodelist_to_regexp($conf, $s, @{$tree[0]});
-	$$s .= '?' if ($mode & T_OPT);
+	$str = escape_re_chars($conf, shift(@tree))
+	       . nodelist_to_regexp($conf, $mode & T_OPT, @{$tree[0]});
     } elsif ($type == T_SFX) {
 	my $sfx = shift(@tree);
-	$$s .= $conf->{group}[0];
-	nodelist_to_regexp($conf, $s, @{$tree[0]});
-	$$s .= '?' if ($mode & T_OPT);
-	$$s .= escape_re_chars($conf, $sfx). $conf->{group}[1];	
+	$str = nodelist_to_regexp($conf, $mode & T_OPT, @{$tree[0]})
+	       . escape_re_chars($conf, $sfx);	
     } else {
 	croak "unrecognized element type";
     }
-    return $$s;
+    return $str;
 }
 
 # ########################################################
@@ -335,14 +347,16 @@ sub trans_posix {
 	group   => [ '(', ')' ],
 	branch  => '|'
     );
-    my $s = '';
-    generic_regexp(\%conf, \$s, $tree);
+    my $s = generic_regexp(\%conf, $tree);
     if ($opts->{match} eq 'word') {
 	$s = "\\<$s\\>";
     } elsif ($opts->{match} eq 'exact') {
 	$s = "^$s\$";
     } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
 	croak "invalid match value: $opts->{match}";
+    }
+    if ($opts->{group}) {
+	$s = $conf->{group}[0] . $s . $conf->{group}[1];
     }
     return $s;
 }
@@ -363,14 +377,16 @@ sub trans_pcre {
 	group   => [ '(?:', ')' ],
 	branch  => '|'
     );
-    my $s = '';
-    generic_regexp(\%conf, \$s, $tree);
+    my $s = generic_regexp(\%conf, $tree);
     if ($opts->{match} eq 'word') {
 	$s = "\\b$s\\b";
     } elsif ($opts->{match} eq 'exact') {
 	$s = "^$s\$";
     } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
 	croak "invalid match value: $opts->{match}";
+    }
+    if ($opts->{group}) {
+	$s = $conf->{group}[0] . $s . $conf->{group}[1];
     }
     return $s;
 }
@@ -383,14 +399,16 @@ sub trans_emacs {
 	branch  => '\\\\|'
     );
 
-    my $s = '';
-    generic_regexp(\%conf, \$s, $tree);
+    my $s = generic_regexp(\%conf, $tree);
     if ($opts->{match} eq 'word') {
 	$s = '\\\\<'.$s.'\\\\>';
     } elsif ($opts->{match} eq 'exact') {
 	$s = "^$s\$";
     } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
 	croak "invalid match value: $opts->{match}";
+    }
+    if ($opts->{group}) {
+	$s = $conf->{group}[0] . $s . $conf->{group}[1];
     }
     return $s;
 }
