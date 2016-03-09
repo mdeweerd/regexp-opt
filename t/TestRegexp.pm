@@ -1,5 +1,5 @@
 # -*- perl -*-
-# Copyright (C) 2015 Sergey Poznyakoff <gray@gnu.org>
+# Copyright (C) 2015-2016 Sergey Poznyakoff <gray@gnu.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 package TestRegexp;
 
 use strict;
-use String::Regexp;
+use List::Regexp;
 use Test;
 use Carp;
 
@@ -38,7 +38,7 @@ sub TestRegexp {
 
     plan(tests => $tests);
     
-    my $re = array_to_regexp(\%_, @input);
+    my $re = regexp_opt(\%_, @input);
 
     ok($re, $_{re}) if defined($_{re});
     

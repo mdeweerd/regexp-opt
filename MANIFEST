@@ -1,6 +1,7 @@
 MANIFEST
 Makefile.PL
-String/Regexp.pm
+regexp-opt
+lib/List/Regexp.pm
 t/TestRegexp.pm
 t/array.t
 t/charset.t

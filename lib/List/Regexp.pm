@@ -1,5 +1,5 @@
 # -*- perl -*-
-# Copyright (C) 2015 Sergey Poznyakoff <gray@gnu.org>
+# Copyright (C) 2015-2016 Sergey Poznyakoff <gray@gnu.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package String::Regexp;
+package List::Regexp;
 
 use strict;
 use Carp;
@@ -23,9 +23,9 @@ use Data::Dumper;
 require Exporter;
 our @ISA = qw(Exporter);
 
-our %EXPORT_TAGS = ( 'all' => [ qw(array_to_regexp) ] );
-our @EXPORT_OK = ( qw(array_to_regexp) );
-our @EXPORT = qw(array_to_regexp);
+our %EXPORT_TAGS = ( 'all' => [ qw(regexp_opt) ] );
+our @EXPORT_OK = ( qw(regexp_opt) );
+our @EXPORT = qw(regexp_opt);
 our $VERSION = "1.00";
 
 # Synopsis:
@@ -82,18 +82,18 @@ use constant T_MASK => 0xf;
 use constant T_OPT => 0x10;
 
 # Synopsis:
-#   my @list = regexp_opt(ARRAY)
+#   my @list = parse(ARRAY)
 # Arguments:
 #   ARRAY is a sorted array of char array references.
 # Description:
 #   Recursively parse the array of arguments and return a parse tree.
-sub regexp_opt {
+sub parse {
     my @t = @_;
     my @output;
     return [] if $#t == -1;
     while (1) {
 	my @res = split_prefix \@t;
-	if ($res[1] <= 0) {
+	if ($res[1] < 0) {
 	    my @rv = map { [ reverse @{$_} ] } @t;
 	    @res = split_prefix \@rv;
 	    if ($res[1] > 0) {
@@ -101,7 +101,7 @@ sub regexp_opt {
 		my $sfxlen = $#x;
 		my $sfx = join('', @x);
 		my $type = T_SFX;
-		my $prefixes = regexp_opt(map { my @r = @{$_};
+		my $prefixes = parse(map { my @r = @{$_};
 						if ($sfxlen == $#r) {
 						    $type |= T_OPT;
 						    ();
@@ -120,7 +120,7 @@ sub regexp_opt {
 	    my $pfxlen = $#x;
 	    my $pfx = join('', @x);
 	    my $type = T_PFX;
-	    my $suffixes = regexp_opt(map { my @r = @{$_};
+	    my $suffixes = parse(map { my @r = @{$_};
 					    if ($pfxlen == $#r) {
 						$type |= T_OPT;
 						();
@@ -186,30 +186,31 @@ sub escape_re_chars {
 #   Convert subtree into regular expression.
 sub nodelist_to_regexp {
     my $conf = shift;
-    my $s = shift;
+    my $strref = shift;
     my $delim;
     my @cclass;
-    
-    $$s .= $conf->{group}[0] if ($#_ > 0);
+    my $s;
+
     foreach my $elt (@_) {
-	$$s .= $delim if defined $delim;
 	if (ref($elt) eq 'ARRAY') {
-	    generic_regexp($conf, $s, $elt);
+	    $s .= $delim if defined $delim;
+	    generic_regexp($conf, \$s, $elt);
 	    $delim = $conf->{branch};
 	} elsif (length($elt) == 1) {
 	    push @cclass, $elt;
 	} else {
-	    $$s .= $conf->{group}[0] . escape_re_chars($conf, $elt) . $conf->{group}[1];
+	    $s .= $delim if defined $delim;
+	    $s .= escape_re_chars($conf, $elt);
 	    $delim = $conf->{branch};
 	}
     }
 
     if ($#cclass == 0) {
-	$$s .= $delim if defined $delim;
-	$$s .= $cclass[0];
+	$s .= $delim if defined $delim;
+	$s .= $cclass[0];
     } elsif ($#cclass >= 0) {
-	$$s .= $delim if defined $delim;
-	$$s .= '[';
+	$s .= $delim if defined $delim;
+	$s .= '[';
 	@cclass = sort {
 	    if ($a eq '[') {
 		if ($b eq ']') {
@@ -244,9 +245,9 @@ sub nodelist_to_regexp {
 		    $end = $c;
 		} else {
 		    if (ord($end) - ord($start) > 1) {
-			$$s .= "$start-$end";
+			$s .= "$start-$end";
 		    } else {
-			$$s .= "$start$end";
+			$s .= "$start$end";
 		    }
 		    $start = $c;
 		    $end = undef;
@@ -254,27 +255,29 @@ sub nodelist_to_regexp {
 	    } elsif (ord($c) - ord($start) == 1) {
  		$end = $c;
 	    } else {
-		$$s .= $start;
-		$$s .= $end if defined $end;
+		$s .= $start;
+		$s .= $end if defined $end;
 		$start = $c;
 		$end = undef;
 	    }
 	}
 
 	if (defined($start)) {
-	    $$s .= $start;
+	    $s .= $start;
 	    if (defined($end)) {
 		if (ord($end) - ord($start) > 1) {
-		    $$s .= "-$end";
+		    $s .= "-$end";
 		} else {
-		    $$s .= $end;
+		    $s .= $end;
 		}
 	    }
 	}
-	$$s .= ']';
+	$s .= ']';
     }
-    
-    $$s .= $conf->{group}[1] if ($#_ > 0);
+
+    $s = $conf->{group}[0] . $s . $conf->{group}[1]
+	if $delim;
+    $$strref .= $s;
 }
 
 # Synopsis:
@@ -297,10 +300,9 @@ sub generic_regexp {
 	nodelist_to_regexp($conf, $s, @tree);
 	$$s .= '?' if ($mode & T_OPT); # FIXME
     } elsif ($type == T_PFX) {
-	$$s .= $conf->{group}[0] . escape_re_chars($conf, shift(@tree));
+	$$s .= escape_re_chars($conf, shift(@tree));
 	nodelist_to_regexp($conf, $s, @{$tree[0]});
 	$$s .= '?' if ($mode & T_OPT);
-	$$s .= $conf->{group}[1];	
     } elsif ($type == T_SFX) {
 	my $sfx = shift(@tree);
 	$$s .= $conf->{group}[0];
@@ -318,38 +320,10 @@ sub generic_regexp {
 # ########################################################
 
 # Synopsis:
-#   my $s = trans_basic(TREE, OPTS)
-# Arguments:
-#   TREE - a reference to a parse tree obtained from
-#          regexp_opt;
-#   OPTS - hash reference
-# Description:
-#   Convert tree into POSIX basic regular expression.
-
-sub trans_basic {
-    my ($tree, $opts) = @_;
-    my %conf = (
-	rxchars => '[][\\<>.?*^\$]',
-	group   => [ '\(', '\)' ],
-	branch  => '\|'
-    );
-    my $s = '';
-    generic_regexp(\%conf, \$s, $tree);
-    if ($opts->{match} eq 'word') {
-	$s = "\\<$s\\>";
-    } elsif ($opts->{match} eq 'exact') {
-	$s = "^$s\$";
-    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
-	croak "invalid match value: $opts->{match}";
-    }
-    return $s;
-}
-
-# Synopsis:
 #   my $s = trans_posix(TREE, OPTS)
 # Arguments:
 #   TREE - a reference to a parse tree obtained from
-#          regexp_opt;
+#          parse;
 #   OPTS - hash reference
 # Description:
 #   Convert tree into POSIX extended regular expression.
@@ -377,7 +351,7 @@ sub trans_posix {
 #   my $s = trans_pcre(TREE, OPTS)
 # Arguments:
 #   TREE - a reference to a parse tree obtained from
-#          regexp_opt;
+#          parse;
 #   OPTS - hash reference
 # Description:
 #   Convert tree into Perl-compatible regular expression.
@@ -401,25 +375,45 @@ sub trans_pcre {
     return $s;
 }
 
+sub trans_emacs {
+    my ($tree, $opts) = @_;
+    my %conf = (
+	rxchars => '[][.?*^\$]',
+	group   => [ '\\\\(?:', '\\\\)' ],
+	branch  => '\\\\|'
+    );
+
+    my $s = '';
+    generic_regexp(\%conf, \$s, $tree);
+    if ($opts->{match} eq 'word') {
+	$s = '\\\\<'.$s.'\\\\>';
+    } elsif ($opts->{match} eq 'exact') {
+	$s = "^$s\$";
+    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
+	croak "invalid match value: $opts->{match}";
+    }
+    return $s;
+}
+
 my %transtab = (
     pcre => \&trans_pcre,
-    basic => \&trans_basic,
-    posix => \&trans_posix
+    posix => \&trans_posix,
+    emacs => \&trans_emacs
 );
 
 =pod
 
 =head1 NAME
 
-array_to_regexp - Convert list of strings to a regular expression
+regexp_opt - Convert list of strings to a regular expression
 
 =head1 SYNOPSIS
 
-use String::Regexp qw(:all);
+use List::Regexp qw(:all);
 
-my $s = array_to_regexp(@strings);
+my $s = regexp_opt(@strings);
 
-my $s = array_to_regexp(\%opts, @strings);
+my $s = regexp_opt(\%opts, @strings);
 
 =head1 DESCRIPTION
 
@@ -429,10 +423,10 @@ Valid keys are:
 
 =over 4
 
-=item B<type> => B<pcre>|B<basic>|B<posix>
+=item B<type> => B<pcre>|B<posix>|B<emacs>
 
 Controls the flavor of the generated expression: Perl-compatible (the
-default), POSIX basic or POSIX extended.
+default), POSIX extended, or Emacs.
 
 =item B<match> => B<default>|B<exact>|B<word>
     
@@ -455,20 +449,20 @@ If B<1>, enable debugging output.
 Sergey Poznyakoff <gray@gnu.org>    
     
 =cut     
-sub array_to_regexp {
+sub regexp_opt {
     my $trans = \&trans_pcre;
     my $opts;
 
     $opts = shift if (ref($_[0]) eq 'HASH');
 
     if (defined($opts->{type})) {
-	$trans = $transtab{$opts->{type}};
 	croak "unsupported type: $opts->{type}"
-	    unless defined $trans;
+	    unless exists $transtab{$opts->{type}};
+	$trans = $transtab{$opts->{type}};
     }
     
     my @t = map { my @x = split //, $_; \@x } sort @_;
-    my $tree = regexp_opt(@t);
+    my $tree = parse(@t);
     unshift @{$tree}, T_ALT;
     print Data::Dumper->Dump([$tree], [qw(tree)]) if ($opts->{debug});
     return &{$trans}($tree, $opts);

@@ -1,5 +1,5 @@
 # -*- perl -*-
-# Copyright (C) 2015 Sergey Poznyakoff <gray@gnu.org>
+# Copyright (C) 2015-2016 Sergey Poznyakoff <gray@gnu.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
 use strict;
 use ExtUtils::MakeMaker;
 
-WriteMakefile(NAME         =>  'String::Regexp',
-              VERSION_FROM =>  'lib/String/Regexp.pm',
+WriteMakefile(NAME         =>  'List::Regexp',
+              VERSION_FROM =>  'lib/List/Regexp.pm',
               AUTHOR       =>  'Sergey Poznyakoff <gray@gnu.org>',
               LICENSE      =>  'gpl_v3',
 	      ABSTRACT     =>  'Construct a regexp to match a string from the string list',
-#	      PM           => { 'String/Regexp.pm' => '$(INST_LIBDIR)/Regexp.pm' }
+#	      PM           => { 'List/Regexp.pm' => '$(INST_LIBDIR)/Regexp.pm' }
+	      'EXE_FILES'  => [ 'regexp-opt' ]
 );
