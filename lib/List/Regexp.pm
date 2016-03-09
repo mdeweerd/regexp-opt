@@ -96,7 +96,7 @@ sub parse {
 	if ($res[1] < 0) {
 	    my @rv = map { [ reverse @{$_} ] } @t;
 	    @res = split_prefix \@rv;
-	    if ($res[1] > 0) {
+	    if ($res[1] >= 0) {
 		my @x = reverse @{$rv[0]}[0..$res[1]];
 		my $sfxlen = $#x;
 		my $sfx = join('', @x);
