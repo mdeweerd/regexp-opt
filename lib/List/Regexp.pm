@@ -24,28 +24,30 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw(regexp_opt) ] );
-our @EXPORT_OK = ( qw(regexp_opt) );
+our @EXPORT_OK = ( qw(regexp_opt find_lcp) );
 our @EXPORT = qw(regexp_opt);
 our $VERSION = "1.00";
 
 # Synopsis:
-#   my @res = split_prefix(ARRAY)
+#   my @res = find_lcp(AREF)
 # Arguments:
-#   ARRAY is a sorted array of char array references.
+#   AREF is a reference to a sorted ARRAY of char array references.
 # Description:
-#   Find N first elements of ARRAY sharing the longest prefix (of length L).
+#   Find N first elements of ARRAY sharing the longest common prefix (of
+#   length L).
 #   In other words, find N and L such that ARRAY[N][L+1] != ARRAY[N+1][L+1].
 # Return value:
 #   (N, L)
-sub split_prefix {
+sub find_lcp {
     my $aref = shift;
 
     my $n = $#{$aref};
     my $j = 0;
     my $k = -1;
+    my $minlen = $#{$aref->[0]};
+    $minlen = $#{$aref->[1]} if $#{$aref->[1]} < $minlen;
     while ($n > 0 and
-	   $j <= $#{$aref->[0]} and
-	   $j <= $#{$aref->[1]} and
+	   $j <= $minlen and
 	   $aref->[1][$j] eq $aref->[0][$j]) {
 	for (my $i = 0; $i < $n; $i++) {
 	    if ($j <= $#{$aref->[$i]}) {
@@ -92,10 +94,10 @@ sub parse {
     my @output;
     return [] if $#t == -1;
     while (1) {
-	my @res = split_prefix \@t;
+	my @res = find_lcp \@t;
 	if ($res[1] < 0) {
 	    my @rv = map { [ reverse @{$_} ] } @t;
-	    @res = split_prefix \@rv;
+	    @res = find_lcp \@rv;
 	    if ($res[1] >= 0) {
 		my @x = reverse @{$rv[0]}[0..$res[1]];
 		my $sfxlen = $#x;
