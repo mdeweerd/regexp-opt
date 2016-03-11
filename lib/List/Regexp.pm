@@ -380,6 +380,10 @@ If B<word>, the expression will match single words only.
 =item B<debug> => B<0>|B<1>
 
 If B<1>, enable debugging output.    
+
+=item B<group> => B<0>|B<1>
+
+If B<1>, enclose entire regexp in a group.
     
 =back    
 
@@ -400,8 +404,9 @@ sub regexp_opt {
 	    unless exists $transtab{$opts->{type}};
 	$trans = $transtab{$opts->{type}};
     }
-    
-    my @t = map { my @x = split //, $_; \@x } sort @_;
+
+    my %h = map { $_, 1 } @_; # Make sure there are no duplicates
+    my @t = map { my @x = split //, $_; \@x } sort keys %h;
     my $tree = parse(@t);
     unshift @{$tree}, T_ALT;
     print Data::Dumper->Dump([$tree], [qw(tree)]) if ($opts->{debug});
