@@ -24,44 +24,36 @@ require Exporter;
 our @ISA = qw(Exporter);
 
 our %EXPORT_TAGS = ( 'all' => [ qw(regexp_opt) ] );
-our @EXPORT_OK = ( qw(regexp_opt find_lcp) );
+our @EXPORT_OK = ( qw(regexp_opt) );
 our @EXPORT = qw(regexp_opt);
 our $VERSION = "1.00";
 
 # Synopsis:
-#   my @res = find_lcp(AREF)
+#   my @res = find_prefix(AREF)
 # Arguments:
 #   AREF is a reference to a sorted ARRAY of char array references.
 # Description:
-#   Find N first elements of ARRAY sharing the longest common prefix (of
+#   Find N first elements of ARRAY sharing the shortest common prefix (of
 #   length L).
-#   In other words, find N and L such that ARRAY[N][L+1] != ARRAY[N+1][L+1].
 # Return value:
 #   (N, L)
-sub find_lcp {
+
+sub find_prefix {
     my $aref = shift;
 
-    my $n = $#{$aref};
-    my $j = 0;
-    my $k = -1;
-    my $minlen = $#{$aref->[0]};
-    $minlen = $#{$aref->[1]} if $#{$aref->[1]} < $minlen;
-    while ($n > 0 and
-	   $j <= $minlen and
-	   $aref->[1][$j] eq $aref->[0][$j]) {
-	for (my $i = 0; $i < $n; $i++) {
-	    if ($j <= $#{$aref->[$i]}) {
-		unless ($j <= $#{$aref->[$i+1]} and
-			$aref->[$i+1][$j] eq $aref->[$i][$j]) {
-		    $n = $i;
-		    last;
-		}
-	    }
+    my ($n, $l);
+
+    my $c = $aref->[0][0];
+    for ($n = 0; $n+1 <= $#{$aref} and $aref->[$n+1][0] eq $c; $n++) {};
+	    
+  OUTER:
+    for ($l = 0; $l <= $#{$aref->[0]}; $l++) {
+	$c = $aref->[0][$l+1];
+	for (my $i = 1; $i <= $n; $i++) {
+	    last OUTER if ($l+1 > $#{$aref->[$i]} or $aref->[$i][$l+1] ne $c);
 	}
-	$k = $j++;
     }
-    $n = 0 if ($k == -1);
-    return ($n,$k);
+    return ($n,$l);
 }
 
 # Each node of the parse tree is a list.  Its 0th element keeps the type of
@@ -94,11 +86,11 @@ sub parse {
     my @output;
     return [] if $#t == -1;
     while (1) {
-	my @res = find_lcp \@t;
-	if ($res[1] < 0) {
+	my @res = find_prefix \@t;
+	if (!$res[0]) {
 	    my @rv = map { [ reverse @{$_} ] } @t;
-	    @res = find_lcp \@rv;
-	    if ($res[1] >= 0) {
+	    @res = find_prefix \@rv;
+	    if ($res[0]) {
 		my @x = reverse @{$rv[0]}[0..$res[1]];
 		my $sfxlen = $#x;
 		my $sfx = join('', @x);
@@ -278,21 +270,15 @@ sub nodelist_to_regexp {
 	$s = $conf->{group}[0]
 	     . join($conf->{branch},@alternations)
 	     . $conf->{group}[1];
+    } elsif (!$set and length($alternations[0]) > 1) {
+	# Add grouping if the resulting text is not a character set
+	# and is longer than one character
+	$s = $conf->{group}[0] . $alternations[0] . $conf->{group}[1];
     } else {
 	$s = $alternations[0];
     }
-    if ($opt) {
-	# Extra parentheses must be used if:
-	#  1. There were no alternations ($#alternations <= 0)
-	#  2. The resulting text is not a character set (!$set)
-	#  3. It is longer than one character
-	if ($#alternations <= 0
-	    and !$set
-	    and length($s) > 1) {
-	    $s = $conf->{group}[0] . $s . $conf->{group}[1];
-	} 
-	$s .= '?';
-    }
+    
+    $s .= '?' if $opt;
 
     return $s;
 }
