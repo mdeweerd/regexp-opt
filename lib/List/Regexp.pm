@@ -393,16 +393,18 @@ Sergey Poznyakoff <gray@gnu.org>
     
 =cut     
 sub regexp_opt {
-    my $trans = \&trans_pcre;
+    my $trans;
     my $opts;
     my $conf;
     
     $opts = shift if (ref($_[0]) eq 'HASH');
 
-    if (defined($opts->{type})) {
+    if (exists($opts->{type})) {
 	croak "unsupported type: $opts->{type}"
 	    unless exists $transtab{$opts->{type}};
 	$trans = $transtab{$opts->{type}};
+    } else {
+	$trans = $transtab{'pcre'};
     }
 
     my %h = map { $_, 1 } @_; # Make sure there are no duplicates
