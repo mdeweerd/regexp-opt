@@ -20,8 +20,8 @@ use ExtUtils::MakeMaker;
 WriteMakefile(NAME         =>  'List::Regexp',
               VERSION_FROM =>  'lib/List/Regexp.pm',
               AUTHOR       =>  'Sergey Poznyakoff <gray@gnu.org>',
-              LICENSE      =>  'gpl_v3',
-	      ABSTRACT     =>  'Construct a regexp to match a string from the string list',
+              LICENSE      =>  'gpl_3',
+	      ABSTRACT     =>  'Construct a regexp to match any string from the string list',
 #	      PM           => { 'List/Regexp.pm' => '$(INST_LIBDIR)/Regexp.pm' }
 	      'EXE_FILES'  => [ 'regexp-opt' ]
 );

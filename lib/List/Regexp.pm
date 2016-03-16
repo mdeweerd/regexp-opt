@@ -26,7 +26,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw(regexp_opt) ] );
 our @EXPORT_OK = ( qw(regexp_opt) );
 our @EXPORT = qw(regexp_opt);
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 # Synopsis:
 #   my @res = find_prefix(AREF)
@@ -356,8 +356,10 @@ my $s = regexp_opt(\%opts, @strings);
 
 =head1 DESCRIPTION
 
-Return a regexp to match a string in the list B<@strings>.  First argument
-can be a reference to a hash, which controls how the regexp is built.
+Returns a regular expression that will match any string from the input
+list B<@strings>.  First argument can be a reference to a hash, which
+controls how the regexp is built.
+
 Valid keys are:
 
 =over 4
@@ -385,8 +387,8 @@ If B<1>, enable debugging output.
 
 If B<1>, enclose entire regexp in a group.
     
-=back    
-
+=back
+    
 =head1 AUTHORS
 
 Sergey Poznyakoff <gray@gnu.org>    

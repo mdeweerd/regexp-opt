@@ -1,5 +1,6 @@
 MANIFEST
 Makefile.PL
+README
 regexp-opt
 lib/List/Regexp.pm
 t/TestRegexp.pm
