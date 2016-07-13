@@ -141,8 +141,8 @@ sub parse {
 #
 # rxchars: A Perl regular expression matching special characters, which should
 # be escaped with a backslash on output:
-#   posix [][\\<>.(){}?*^\$]
-#   pcre  [][\\.(){}?*^\$]
+#   posix [][\\<>.(){}?*+^\$]
+#   pcre  [][\\.(){}?*^+\$]
 #
 # group:   A reference to a list of two elements containig markers for
 # parenthesized groups.  Non-capturing groups are used, if possible.
@@ -321,19 +321,19 @@ sub generic_regexp {
 
 my %transtab = (
     pcre => {
-	rxchars => '[][\\|.(){}?*^\$]',
+	rxchars => '[][\\|.(){}?*+^\$]',
 	group   => [ '(?:', ')' ],
 	branch  => '|',
 	word => [ '\\b', '\\b' ]
     },
     posix => {
-	rxchars => '[][\\<>.|(){}?*^\$]',
+	rxchars => '[][\\<>.|(){}?*+^\$]',
 	group   => [ '(', ')' ],
 	branch  => '|',
 	word => [ '\\<', '\\>' ]
     },
     emacs => {
-	rxchars => '[][.?*^\$]',
+	rxchars => '[][.?*+^\$]',
 	group   => [ '\\\\(?:', '\\\\)' ],
 	branch  => '\\\\|',
 	word => [ '\\\\<', '\\\\>' ]
