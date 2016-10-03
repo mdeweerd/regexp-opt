@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use strict;
+use warnings;
+
 use List::Regexp;
 use Getopt::Long qw(:config gnu_getopt no_ignore_case);
 use File::Basename;

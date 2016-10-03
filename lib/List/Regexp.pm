@@ -19,6 +19,7 @@ package List::Regexp;
 use strict;
 use Carp;
 use Data::Dumper;
+use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -26,7 +27,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw(regexp_opt) ] );
 our @EXPORT_OK = ( qw(regexp_opt) );
 our @EXPORT = qw(regexp_opt);
-our $VERSION = "1.01";
+our $VERSION = "1.02";
 
 # Synopsis:
 #   my @res = find_prefix(AREF)
@@ -47,7 +48,7 @@ sub find_prefix {
     for ($n = 0; $n+1 <= $#{$aref} and $aref->[$n+1][0] eq $c; $n++) {};
 	    
   OUTER:
-    for ($l = 0; $l <= $#{$aref->[0]}; $l++) {
+    for ($l = 0; $l < $#{$aref->[0]}; $l++) {
 	$c = $aref->[0][$l+1];
 	for (my $i = 1; $i <= $n; $i++) {
 	    last OUTER if ($l+1 > $#{$aref->[$i]} or $aref->[$i][$l+1] ne $c);
@@ -416,12 +417,14 @@ sub regexp_opt {
     print Data::Dumper->Dump([$tree], [qw(tree)]) if ($opts->{debug});
 
     my $s = generic_regexp($trans, $tree);
-    if ($opts->{match} eq 'word') {
-	$s =  $trans->{word}[0] . $s . $trans->{word}[1];
-    } elsif ($opts->{match} eq 'exact') {
-	$s = "^$s\$";
-    } elsif (defined($opts->{match}) and $opts->{match} ne 'default') {
-	croak "invalid match value: $opts->{match}";
+    if (exists($opts->{match})) {
+	if ($opts->{match} eq 'word') {
+	    $s =  $trans->{word}[0] . $s . $trans->{word}[1];
+	} elsif ($opts->{match} eq 'exact') {
+	    $s = "^$s\$";
+	} elsif ($opts->{match} ne 'default') {
+	    croak "invalid match value: $opts->{match}";
+	}
     }
     $s = $trans->{group}[0] . $s . $trans->{group}[1]
 	if $opts->{group};

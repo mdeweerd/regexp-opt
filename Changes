@@ -1,3 +1,9 @@
+1.02 2016-10-03
+
+* Fix the list of escapable characters.
+* Fix runtime warnings.
+* Add missing files.
+
 1.01 2016-03-16
 
 * Improved documentation and the accompanying files

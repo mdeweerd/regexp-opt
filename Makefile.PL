@@ -22,6 +22,16 @@ WriteMakefile(NAME         =>  'List::Regexp',
               AUTHOR       =>  'Sergey Poznyakoff <gray@gnu.org>',
               LICENSE      =>  'gpl_3',
 	      ABSTRACT     =>  'Construct a regexp to match any string from the string list',
-#	      PM           => { 'List/Regexp.pm' => '$(INST_LIBDIR)/Regexp.pm' }
-	      'EXE_FILES'  => [ 'regexp-opt' ]
+	      EXE_FILES    => [ 'regexp-opt' ],
+	      MIN_PERL_VERSION => '5.006',
+	      META_MERGE => {
+		  'meta-spec' => { version => 2 },
+		  resources => {
+		      repository => {
+			  type => 'git',
+			  url => 'git://git.gnu.org.ua/regexp-opt.git',
+			  web => 'http://git.gnu.org.ua/cgit/regexp-opt.git/',
+		      },
+		  }
+	      }
 );
