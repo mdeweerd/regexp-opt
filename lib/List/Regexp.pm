@@ -27,7 +27,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw(regexp_opt) ] );
 our @EXPORT_OK = ( qw(regexp_opt) );
 our @EXPORT = qw(regexp_opt);
-our $VERSION = "1.02";
+our $VERSION = "1.03";
 
 # Synopsis:
 #   my @res = find_prefix(AREF)
@@ -389,6 +389,14 @@ If B<1>, enable debugging output.
 If B<1>, enclose entire regexp in a group.
     
 =back
+
+=head1 LICENSE
+
+GPLv3+: GNU GPL version 3 or later, see
+<http://gnu.org/licenses/gpl.html>
+    
+This  is  free  software:  you  are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.    
     
 =head1 AUTHORS
 

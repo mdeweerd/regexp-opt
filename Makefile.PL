@@ -16,6 +16,7 @@
 
 use strict;
 use ExtUtils::MakeMaker;
+use Module::Metadata;
 
 WriteMakefile(NAME         =>  'List::Regexp',
               VERSION_FROM =>  'lib/List/Regexp.pm',
@@ -23,7 +24,7 @@ WriteMakefile(NAME         =>  'List::Regexp',
               LICENSE      =>  'gpl_3',
 	      ABSTRACT     =>  'Construct a regexp to match any string from the string list',
 	      EXE_FILES    => [ 'regexp-opt' ],
-	      MIN_PERL_VERSION => '5.006',
+	      MIN_PERL_VERSION => 5.006,
 	      META_MERGE => {
 		  'meta-spec' => { version => 2 },
 		  resources => {
@@ -32,6 +33,8 @@ WriteMakefile(NAME         =>  'List::Regexp',
 			  url => 'git://git.gnu.org.ua/regexp-opt.git',
 			  web => 'http://git.gnu.org.ua/cgit/regexp-opt.git/',
 		      },
-		  }
+		  },
+		  provides => Module::Metadata->provides(version => '1.4',
+							 dir => 'lib')
 	      }
 );
