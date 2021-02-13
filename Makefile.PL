@@ -1,5 +1,5 @@
 # -*- perl -*-
-# Copyright (C) 2015-2016 Sergey Poznyakoff <gray@gnu.org>
+# Copyright (C) 2015-2021 Sergey Poznyakoff <gray@gnu.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,10 @@ WriteMakefile(NAME         =>  'List::Regexp',
 			  url => 'git://git.gnu.org.ua/regexp-opt.git',
 			  web => 'http://git.gnu.org.ua/cgit/regexp-opt.git/',
 		      },
+		      bugtracker => {
+			  web => 'https://puszcza.gnu.org.ua/bugs/?group=regexp-opt',
+			  mailto => 'gray+regexp-opt@gnu.org.ua'
+		      }
 		  },
 		  provides => Module::Metadata->provides(version => '1.4',
 							 dir => 'lib')
