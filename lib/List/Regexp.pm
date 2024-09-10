@@ -45,13 +45,13 @@ sub find_prefix {
     my ($n, $l);
 
     my $c = $aref->[0][0];
-    for ($n = 0; $n+1 <= $#{$aref} and $aref->[$n+1][0] eq $c; $n++) {};
+    for ($n = 0; $n+1 <= $#{$aref} && $aref->[$n+1][0] eq $c; $n++) {};
 	    
   OUTER:
     for ($l = 0; $l < $#{$aref->[0]}; $l++) {
 	$c = $aref->[0][$l+1];
 	for (my $i = 1; $i <= $n; $i++) {
-	    last OUTER if ($l+1 > $#{$aref->[$i]} or $aref->[$i][$l+1] ne $c);
+	    last OUTER if ($l+1 > $#{$aref->[$i]} || $aref->[$i][$l+1] ne $c);
 	}
     }
     return ($n,$l);
@@ -271,7 +271,7 @@ sub nodelist_to_regexp {
 	$s = $conf->{group}[0]
 	     . join($conf->{branch},@alternations)
 	     . $conf->{group}[1];
-    } elsif (!$set and length($alternations[0]) > 1) {
+    } elsif (!$set && length($alternations[0]) > 1) {
 	# Add grouping if the resulting text is not a character set
 	# and is longer than one character
 	$s = $conf->{group}[0] . $alternations[0] . $conf->{group}[1];
