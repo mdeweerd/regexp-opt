@@ -198,7 +198,7 @@ sub nodelist_to_regexp {
     }
 
     if ($#cclass == 0) {
-	push @alternations, $cclass[0];
+	push @alternations, escape_re_chars($conf, $cclass[0]);
     } elsif ($#cclass >= 0) {
 	$s = '[';
 	@cclass = sort {
