@@ -1,0 +1,78 @@
+---
+files: >
+  (?x)
+  ^(.*\.(py|pl|pm|json|md|sh|yaml|cfg|txt)
+   |(.*/)?[^.]*
+   )$
+#   (GUI/(asc|configureMode|convertLogo|doAsc
+#         |doInstallWin|installX|installX|setkeyboard|trans))
+#   |PC/release|addDbUser|asc|checkIwatch|checkconf|cloneBeagle
+#   |doDailyReport|doReport|doTcLogin|doTcNoResult|doTest
+#   |etc/cron.weekly/cleanMail|home/asc|home/doDailyReport
+#   |home/doReport|home/doTask|pctest|purgePackages|send
+#   |testService|tools/syncToServer|tools/_syncFromServer
+#   |updateBuster|updateEtcTimestamp|updateStretch|usbdevinserted
+#   )$
+exclude: (\.bak|(\.cache|devinfo|/Azure-ttk-theme)/.*)$
+repos:
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.4
+    hooks:
+      - id: remove-tabs
+        exclude_types: [shell]
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.17
+    hooks:
+      - id: mdformat
+        name: Format Markdown
+        entry: mdformat # Executable to run, with fixed options
+        language: python
+        types: [markdown]
+        args: [--wrap, "75", --number]
+        additional_dependencies:
+          - mdformat-toc
+          - mdformat-beautysh
+          - mdformat-config
+          - mdformat-black
+          - mdformat-web
+          - mdformat-gfm
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: no-commit-to-branch
+        args: [--branch, master]
+      - id: check-yaml
+        args: [--unsafe]
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-json
+      - id: mixed-line-ending
+      - id: check-builtin-literals
+      - id: check-ast
+      - id: check-merge-conflict
+        stages: [pre-commit, pre-merge-commit, pre-rebase]
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: fix-byte-order-marker
+      - id: check-case-conflict
+      # - id: check-toml
+  - repo: https://github.com/perltidy/perltidy
+    rev: "20230912.06"
+    hooks:
+      - id: perltidy
+  - repo: https://github.com/henryykt/pre-commit-perl
+    rev: v0.0.5
+    hooks:
+      - id: perlcritic
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        exclude: >
+          (?x)
+          ^(.*(CAscPDF.pm|ascpdf.pl|asc_pdf.pl|CModBus.pl
+              |README.md|INSTALL.md|CUPS.md|config.txt
+              |add-user
+              |addDbUser))$
+        args: ["--ignore-words-list=hass,weerd", --skip="./.*", --quiet-level=2]

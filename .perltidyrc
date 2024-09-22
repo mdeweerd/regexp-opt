@@ -1,0 +1,15 @@
+ -pbp
+# -i=4
+# -lp
+# -vt=1
+# -vtc=1
+# -nolq
+# -nsbl
+# -pt=2
+# -sbt=2
+# -bt=2
+# --ce
+# -nwls="= * / ."
+# -nwrs="= * / ."
+# -nfpva
+# -nospace-after-keyword="if"
