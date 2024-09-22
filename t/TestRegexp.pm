@@ -22,36 +22,36 @@ use Test;
 use Carp;
 
 require Exporter;
-our @ISA = qw(Exporter);
+our @ISA    = qw(Exporter);
 our @EXPORT = qw(TestRegexp);
 
 sub TestRegexp {
     local %_ = @_;
     croak "no input supplied" unless defined $_{input};
-    my @input = @{$_{input}};
+    my @input = @{ $_{input} };
 
     my $tests = $#input + 1;
 
     $tests++ if defined $_{re};
-    $tests += $#{$_{xok}} + 1 if defined($_{xok});
-    $tests += $#{$_{xfail}} + 1 if defined($_{xfail});
+    $tests += $#{ $_{xok} } + 1   if defined( $_{xok} );
+    $tests += $#{ $_{xfail} } + 1 if defined( $_{xfail} );
 
-    plan(tests => $tests);
-    
-    my $re = regexp_opt(\%_, @input);
+    plan( tests => $tests );
 
-    ok($re, $_{re}) if defined($_{re});
-    
+    my $re = regexp_opt( \%_, @input );
+
+    ok( $re, $_{re} ) if defined( $_{re} );
+
     foreach my $s (@input) {
-	ok($s, qr/$re/);
+        ok( $s, qr/$re/ );
     }
 
-    foreach my $s (@{$_{xok}}) {
-	ok($s, qr/$re/);
+    foreach my $s ( @{ $_{xok} } ) {
+        ok( $s, qr/$re/ );
     }
 
-    foreach my $s (@{$_{xfail}}) {
-	ok($s !~ m/$re/);
+    foreach my $s ( @{ $_{xfail} } ) {
+        ok( $s !~ m/$re/ );
     }
 }
 

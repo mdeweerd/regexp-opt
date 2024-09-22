@@ -18,7 +18,7 @@ List-Regexp-1.03/t/single.t
 List-Regexp-1.03/t/suffix.t
 List-Regexp-1.03/t/TestRegexp.pm
 Makefile.PL
-MANIFEST			This list of files
+MANIFEST            This list of files
 MANIFEST.SKIP
 README
 regexp-opt

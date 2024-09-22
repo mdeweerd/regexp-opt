@@ -30,11 +30,11 @@ Example of its usage:
 regexp-opt utility
 ==================
 
-This utilitiy offers a command line interface to the module.  It collects
+This utility offers a command line interface to the module.  It collects
 its arguments and prints out a regular expression that will match any of
 them.  E.g.:
 
-  $ regexp-opt --word string test stringent 
+  $ regexp-opt --word string test stringent
   \<(string(ent)?|test)\>
 
 Copying
@@ -45,4 +45,3 @@ the Free Software Foundation; either version 3, or (at your option)
 any later version.
 
 See http://www.gnu.org/licenses.
-
