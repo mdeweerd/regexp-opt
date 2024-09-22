@@ -23,35 +23,39 @@ use File::Basename;
 use Pod::Usage;
 use Pod::Man;
 
-use constant EX_OK => 0;
+use constant EX_OK    => 0;
 use constant EX_USAGE => 1;
 
-my $progname = basename($0);
+my $progname  = basename($0);
 my $progdescr = "creates a regexp matching all words in the command line";
-my %opts = ( type => 'posix' );
+my %opts      = ( type => 'posix' );
 
-GetOptions("h" => sub {
-               pod2usage(-message => "$progname: $progdescr",
-                         -exitstatus => EX_OK);
-           },
-           "help" => sub {
-               pod2usage(-exitstatus => EX_OK, -verbose => 2);
-           },
-           "usage" => sub {
-               pod2usage(-exitstatus => EX_OK, -verbose => 0);
-           },
-	   "pcre" => sub { $opts{type} = $_[0] },
-	   "posix" => sub { $opts{type} = $_[0] },
-	   "emacs" => sub { $opts{type} = $_[0] },
-	   "exact" => sub { $opts{match} = $_[0] },
-	   "word" => sub { $opts{match} = $_[0] },
-	   "group" => \$opts{group},
-	   "debug" => \$opts{debug}) or exit(EX_USAGE);
+GetOptions(
+    "h" => sub {
+        pod2usage(
+            -message    => "$progname: $progdescr",
+            -exitstatus => EX_OK
+        );
+    },
+    "help" => sub {
+        pod2usage( -exitstatus => EX_OK, -verbose => 2 );
+    },
+    "usage" => sub {
+        pod2usage( -exitstatus => EX_OK, -verbose => 0 );
+    },
+    "pcre"  => sub { $opts{type}  = $_[0] },
+    "posix" => sub { $opts{type}  = $_[0] },
+    "emacs" => sub { $opts{type}  = $_[0] },
+    "exact" => sub { $opts{match} = $_[0] },
+    "word"  => sub { $opts{match} = $_[0] },
+    "group" => \$opts{group},
+    "debug" => \$opts{debug}
+) or exit(EX_USAGE);
 
-pod2usage(-exitstatus => EX_USAGE, -verbose => 0, -output  => \*STDERR)
+pod2usage( -exitstatus => EX_USAGE, -verbose => 0, -output => \*STDERR )
     if $#ARGV == -1;
 
-print regexp_opt(\%opts, @ARGV);
+print regexp_opt( \%opts, @ARGV );
 print "\n";
 __END__
 =head1 NAME
@@ -73,7 +77,7 @@ I<STRING> [I<STRING>...]
 
 Creates a regular expression that will match any of the words listed in the
 command line.  By default, POSIX extended regexp is created.
-    
+
 =head1 OPTIONS
 
 =over 4
@@ -81,28 +85,28 @@ command line.  By default, POSIX extended regexp is created.
 =item B<--debug>
 
 Enable debugging output.
-    
+
 =item B<--emacs>
 
-Create B<Emacs> regular expression.    
-    
+Create B<Emacs> regular expression.
+
 =item B<--exact>
 
-Create a regexp that will match only words appearing at a line alone.    
-    
+Create a regexp that will match only words appearing at a line alone.
+
 =item B<--pcre>
 
-Create Perl-compatible regular expression.    
-    
+Create Perl-compatible regular expression.
+
 =item B<--posix>
 
-Create POSIX extended regular expression (default).    
-    
+Create POSIX extended regular expression (default).
+
 =item B<--word>
 
-Create regexp for matching whole words. 
-    
-=back    
+Create regexp for matching whole words.
+
+=back
 
 =head1 AUTHOR
 
