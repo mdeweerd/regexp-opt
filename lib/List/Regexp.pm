@@ -1,5 +1,5 @@
 # -*- perl -*-
-# Copyright (C) 2015-2021 Sergey Poznyakoff <gray@gnu.org>
+# Copyright (C) 2015-2024 Sergey Poznyakoff <gray@gnu.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ our @ISA = qw(Exporter);
 our %EXPORT_TAGS = ( 'all' => [ qw(regexp_opt) ] );
 our @EXPORT_OK = ( qw(regexp_opt) );
 our @EXPORT = qw(regexp_opt);
-our $VERSION = "1.04";
+our $VERSION = "1.05";
 
 # Synopsis:
 #   my @res = find_prefix(AREF)
@@ -145,7 +145,7 @@ sub parse {
 #   posix [][\\<>.(){}?*+^\$]
 #   pcre  [][\\.(){}?*^+\$]
 #
-# group:   A reference to a list of two elements containig markers for
+# group:   A reference to a list of two elements containing markers for
 # parenthesized groups.  Non-capturing groups are used, if possible.
 #   posix [ '(', ')' ]
 #   pcre  [ '(?:', ')' ]
